@@ -47,20 +47,28 @@ def get_unet():
 
     conv5 = Convolution2D(512, 3, 3, activation='relu', border_mode='same')(pool4)
     conv5 = Convolution2D(512, 3, 3, activation='relu', border_mode='same')(conv5)
+    # pool5 = MaxPooling2D(pool_size=(2, 2))(conv5)
 
-    up6 = merge([UpSampling2D(size=(2, 2))(conv5), conv4], mode='concat', concat_axis=1)
+    # convdeep = Convolution2D(1024, 3, 3, activation='relu', border_mode='same')(pool5)
+    # convdeep = Convolution2D(1024, 3, 3, activation='relu', border_mode='same')(convdeep)
+    
+    # upmid = merge([Convolution2D(512, 2, 2, border_mode='same')(UpSampling2D(size=(2, 2))(convdeep)), conv5], mode='concat', concat_axis=1)
+    # convmid = Convolution2D(512, 3, 3, activation='relu', border_mode='same')(upmid)
+    # convmid = Convolution2D(512, 3, 3, activation='relu', border_mode='same')(convmid)
+
+    up6 = merge([Convolution2D(256, 2, 2,activation='relu', border_mode='same')(UpSampling2D(size=(2, 2))(conv5)), conv4], mode='concat', concat_axis=1)
     conv6 = Convolution2D(256, 3, 3, activation='relu', border_mode='same')(up6)
     conv6 = Convolution2D(256, 3, 3, activation='relu', border_mode='same')(conv6)
 
-    up7 = merge([UpSampling2D(size=(2, 2))(conv6), conv3], mode='concat', concat_axis=1)
+    up7 = merge([Convolution2D(128, 2, 2,activation='relu', border_mode='same')(UpSampling2D(size=(2, 2))(conv6)), conv3], mode='concat', concat_axis=1)
     conv7 = Convolution2D(128, 3, 3, activation='relu', border_mode='same')(up7)
     conv7 = Convolution2D(128, 3, 3, activation='relu', border_mode='same')(conv7)
 
-    up8 = merge([UpSampling2D(size=(2, 2))(conv7), conv2], mode='concat', concat_axis=1)
+    up8 = merge([Convolution2D(64, 2, 2,activation='relu', border_mode='same')(UpSampling2D(size=(2, 2))(conv7)), conv2], mode='concat', concat_axis=1)
     conv8 = Convolution2D(64, 3, 3, activation='relu', border_mode='same')(up8)
     conv8 = Convolution2D(64, 3, 3, activation='relu', border_mode='same')(conv8)
 
-    up9 = merge([UpSampling2D(size=(2, 2))(conv8), conv1], mode='concat', concat_axis=1)
+    up9 = merge([Convolution2D(32, 2, 2,activation='relu', border_mode='same')(UpSampling2D(size=(2, 2))(conv8)), conv1], mode='concat', concat_axis=1)
     conv9 = Convolution2D(32, 3, 3, activation='relu', border_mode='same')(up9)
     conv9 = Convolution2D(32, 3, 3, activation='relu', border_mode='same')(conv9)
 
@@ -108,7 +116,7 @@ def train_and_predict():
     print('-'*30)
     print('Fitting model...')
     print('-'*30)
-    model.fit(imgs_train, imgs_mask_train, batch_size=32, nb_epoch=20, verbose=1, shuffle=True,
+    model.fit(imgs_train, imgs_mask_train, batch_size=32, nb_epoch=200, verbose=1, shuffle=True,
               callbacks=[model_checkpoint])
 
     print('-'*30)
