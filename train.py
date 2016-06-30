@@ -76,7 +76,7 @@ def get_unet():
 
     model = Model(input=inputs, output=conv10)
 
-    model.compile(optimizer=Adam(lr=1e-5), loss=dice_coef_loss, metrics=[dice_coef])
+    model.compile(optimizer=Adam(lr=1e-6), loss=dice_coef_loss, metrics=[dice_coef])
 
     return model
 
@@ -111,14 +111,14 @@ def train_and_predict():
     print('Creating and compiling model...')
     print('-'*30)
     model = get_unet()
-    # model.load_weights('56.hdf5')
+    model.load_weights('unet.hdf5')
     
-    model_checkpoint = ModelCheckpoint('unet.hdf5', monitor='loss', save_best_only=True)
+    model_checkpoint = ModelCheckpoint('unet.hdf5', monitor='loss',verbose=1, save_best_only=True)
 
     print('-'*30)
     print('Fitting model...')
     print('-'*30)
-    model.fit(imgs_train, imgs_mask_train, batch_size=32, nb_epoch=200, verbose=1, shuffle=True,
+    model.fit(imgs_train, imgs_mask_train, batch_size=32, nb_epoch=20, verbose=1, shuffle=True,
               callbacks=[model_checkpoint])
 
     print('-'*30)
