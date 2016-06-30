@@ -10,8 +10,8 @@ from keras import backend as K
 
 from data import load_train_data, load_test_data
 
-img_rows = 64
-img_cols = 80
+img_rows = 96
+img_cols = 128
 
 smooth = 1.
 
@@ -47,16 +47,16 @@ def get_unet():
 
     conv5 = Convolution2D(512, 3, 3, activation='relu', border_mode='same')(pool4)
     conv5 = Convolution2D(512, 3, 3, activation='relu', border_mode='same')(conv5)
-    # pool5 = MaxPooling2D(pool_size=(2, 2))(conv5)
+    pool5 = MaxPooling2D(pool_size=(2, 2))(conv5)
 
-    # convdeep = Convolution2D(1024, 3, 3, activation='relu', border_mode='same')(pool5)
-    # convdeep = Convolution2D(1024, 3, 3, activation='relu', border_mode='same')(convdeep)
+    convdeep = Convolution2D(1024, 3, 3, activation='relu', border_mode='same')(pool5)
+    convdeep = Convolution2D(1024, 3, 3, activation='relu', border_mode='same')(convdeep)
     
-    # upmid = merge([Convolution2D(512, 2, 2, border_mode='same')(UpSampling2D(size=(2, 2))(convdeep)), conv5], mode='concat', concat_axis=1)
-    # convmid = Convolution2D(512, 3, 3, activation='relu', border_mode='same')(upmid)
-    # convmid = Convolution2D(512, 3, 3, activation='relu', border_mode='same')(convmid)
+    upmid = merge([Convolution2D(512, 2, 2, border_mode='same')(UpSampling2D(size=(2, 2))(convdeep)), conv5], mode='concat', concat_axis=1)
+    convmid = Convolution2D(512, 3, 3, activation='relu', border_mode='same')(upmid)
+    convmid = Convolution2D(512, 3, 3, activation='relu', border_mode='same')(convmid)
 
-    up6 = merge([Convolution2D(256, 2, 2,activation='relu', border_mode='same')(UpSampling2D(size=(2, 2))(conv5)), conv4], mode='concat', concat_axis=1)
+    up6 = merge([Convolution2D(256, 2, 2,activation='relu', border_mode='same')(UpSampling2D(size=(2, 2))(convmid)), conv4], mode='concat', concat_axis=1)
     conv6 = Convolution2D(256, 3, 3, activation='relu', border_mode='same')(up6)
     conv6 = Convolution2D(256, 3, 3, activation='relu', border_mode='same')(conv6)
 
@@ -111,6 +111,8 @@ def train_and_predict():
     print('Creating and compiling model...')
     print('-'*30)
     model = get_unet()
+    # model.load_weights('56.hdf5')
+    
     model_checkpoint = ModelCheckpoint('unet.hdf5', monitor='loss', save_best_only=True)
 
     print('-'*30)
