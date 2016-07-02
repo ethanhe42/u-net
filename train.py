@@ -20,7 +20,7 @@ def dice_coef(y_true, y_pred):
     y_true_f = K.flatten(y_true)
     y_pred_f = K.flatten(y_pred)
     intersection = K.sum(y_true_f * y_pred_f)
-    return (2. * intersection + smooth) / (K.sum(y_true_f) + K.sum(y_pred_f) + smooth)
+    return (2. * intersection + smooth) / (K.sum(y_true_f*y_true_f) + K.sum(y_pred_f*y_pred_f) + smooth)
 
 
 def dice_coef_loss(y_true, y_pred):
@@ -50,7 +50,7 @@ def get_unet():
     pool5 = MaxPooling2D(pool_size=(2, 2))(conv5)
 
     convdeep = Convolution2D(1024, 3, 3, activation='relu', border_mode='same')(pool5)
-    convdeep = Dropout(.5)(convdeep)
+    convdeep = Dropout(.2)(convdeep)
     convdeep = Convolution2D(1024, 3, 3, activation='relu', border_mode='same')(convdeep)
     
     upmid = merge([Convolution2D(512, 2, 2, border_mode='same')(UpSampling2D(size=(2, 2))(convdeep)), conv5], mode='concat', concat_axis=1)
@@ -101,7 +101,8 @@ def train_and_predict():
     imgs_train = imgs_train.astype('float32')
     mean = np.mean(imgs_train)  # mean for data centering
     std = np.std(imgs_train)  # std for data normalization
-
+    print(mean,std)
+    exit()
     imgs_train -= mean
     imgs_train /= std
 
