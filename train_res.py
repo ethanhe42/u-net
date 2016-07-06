@@ -28,8 +28,8 @@ from keras import backend as K
 from data import load_train_data, load_test_data
 from train import dice_coef,dice_coef_loss
 
-rows=160
-cols=224
+rows=224
+cols=320
 def preprocess(imgs, img_rows,img_cols):
     imgs_p = np.ndarray((imgs.shape[0], imgs.shape[1], img_rows, img_cols), dtype=np.uint8)
     for i in range(imgs.shape[0]):
@@ -232,6 +232,12 @@ def main():
     print('-'*30)
     imgs_mask_test = model.predict(imgs_test, verbose=1)
     np.save('imgs_mask_test.npy', imgs_mask_test)
+
+    print('-'*30)
+    print('Predicting masks on train data...')
+    print('-'*30)
+    imgs_mask_test = model.predict(imgs_train, verbose=1)
+    np.save('imgs_train_pred.npy', imgs_mask_test)
 
 if __name__ == '__main__':
     main()

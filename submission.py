@@ -3,6 +3,7 @@ from __future__ import print_function
 import numpy as np
 import cv2
 from data import image_cols, image_rows
+import matplotlib.pyplot as plt
 
 
 def prep(img):
@@ -26,6 +27,22 @@ def run_length_enc(label):
     res = list(chain.from_iterable(res))
     return ' '.join([str(r) for r in res])
 
+def visualize():
+    from data import load_train_data
+    imgs_train, imgs_train_mask = load_train_data()
+    imgs_train_pred=np.load('imgs_train_pred.npy')
+    total=imgs_train.shape[0]
+    for i in range(total):
+        plt.subplot(221)
+        plt.imshow(imgs_train[i,0])
+        plt.subplot(222)
+        plt.imshow(imgs_train_mask[i,0])
+        plt.subplot(223)
+        plt.imshow(imgs_train_pred[i,0])
+        img = prep(imgs_train_pred[i,0])
+        plt.subplot(224)
+        plt.imshow(img)
+        plt.show()
 
 def submission():
     from data import load_test_data
@@ -62,3 +79,4 @@ def submission():
 
 if __name__ == '__main__':
     submission()
+    # visualize()
