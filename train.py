@@ -10,8 +10,8 @@ from keras import backend as K
 
 from data import load_train_data, load_test_data
 
-img_rows = 96
-img_cols = 128
+img_rows = 192
+img_cols = 256
 
 smooth = 1.
 
@@ -24,7 +24,7 @@ def dice_coef(y_true, y_pred):
 
 
 def dice_coef_loss(y_true, y_pred):
-    return -dice_coef(y_true, y_pred)
+    return 1.-dice_coef(y_true, y_pred)
 
 
 def get_unet():
@@ -50,7 +50,6 @@ def get_unet():
     pool5 = MaxPooling2D(pool_size=(2, 2))(conv5)
 
     convdeep = Convolution2D(1024, 3, 3, activation='relu', border_mode='same')(pool5)
-    convdeep = Dropout(.2)(convdeep)
     convdeep = Convolution2D(1024, 3, 3, activation='relu', border_mode='same')(convdeep)
     
     upmid = merge([Convolution2D(512, 2, 2, border_mode='same')(UpSampling2D(size=(2, 2))(convdeep)), conv5], mode='concat', concat_axis=1)
@@ -77,7 +76,7 @@ def get_unet():
 
     model = Model(input=inputs, output=conv10)
 
-    model.compile(optimizer=Adam(lr=1e-6), loss=dice_coef_loss, metrics=[dice_coef])
+    model.compile(optimizer=Adam(lr=1e-5), loss=dice_coef_loss, metrics=[dice_coef])
 
     return model
 
@@ -99,10 +98,8 @@ def train_and_predict():
     imgs_mask_train = preprocess(imgs_mask_train)
 
     imgs_train = imgs_train.astype('float32')
-    mean = np.mean(imgs_train)  # mean for data centering
+    mean = imgs_train.mean(0)[np.newaxis,:]  # mean for data centering
     std = np.std(imgs_train)  # std for data normalization
-    print(mean,std)
-    exit()
     imgs_train -= mean
     imgs_train /= std
 
@@ -113,7 +110,6 @@ def train_and_predict():
     print('Creating and compiling model...')
     print('-'*30)
     model = get_unet()
-    model.load_weights('unet.hdf5')
     
     model_checkpoint = ModelCheckpoint('unet.hdf5', monitor='loss',verbose=1, save_best_only=True)
 

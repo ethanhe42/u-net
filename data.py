@@ -4,9 +4,22 @@ import os
 import numpy as np
 
 import cv2
+import pandas as pd
+import sys
+import os
+import os.path
+import string
+import scipy.io
+import pdb
+import PIL.Image as Image
+import matplotlib.pyplot as plt
+import matplotlib as mpl
+from matplotlib.font_manager import FontProperties
+import skimage
+import skimage.measure
 
 data_path = 'raw/'
-
+save_path = '/mnt/data1/yihuihe/mnc/'
 image_rows = 420
 image_cols = 580
 
@@ -51,6 +64,45 @@ def load_train_data():
     imgs_mask_train = np.load('imgs_mask_train.npy')
     return imgs_train, imgs_mask_train
 
+def detseg():
+    imgs_train = np.load('imgs_train.npy')
+    imgs_train -=imgs_train.mean(0)[np.newaxis,]
+    imgs_train /=imgs_train.std()
+    np.save(save_path+'data.npy',imgs_train.astype(np.uint8))
+    del imgs_train
+    print('save data')
+    imgs_mask_train = np.load('imgs_mask_train.npy')
+    imgs_mask_train[imgs_mask_train<=50]=0
+    imgs_mask_train[imgs_mask_train>50]=1
+    np.save(save_path+'mask.npy',imgs_mask_train.astype(np.uint8))
+    print('save mask')
+    
+    bboxes=[]
+    masks=[]
+    for percent,label in enumerate(imgs_mask_train):
+        if percent % 100==0:
+            print(percent)
+        CCMap,CCNum = skimage.measure.label(label,connectivity=1,background=0,return_num=True)
+        gt_boxes=[]
+        instance_masks=[]
+        for ins in range(CCNum):
+            foregroundIdx=CCMap==ins
+            area=np.sum(foregroundIdx)
+            if area<10:
+                CCMap[foregroundIdx]=-1
+                continue
+            idx_map=np.where(foregroundIdx==foregroundIdx.max())
+            ymin=idx_map[0].min()
+            ymax=idx_map[0].max()
+            xmin=idx_map[1].min()
+            xmax=idx_map[1].max()
+            instance_masks.append(label[ymin:ymax,xmin:xmax])
+            gt_boxes.append([xmin,ymin,xmax,ymax,1])
+        bboxes.append(gt_boxes)
+        masks.append(instance_masks)
+
+    np.save(save_path+'roidb.npy',np.array(bboxes))
+    np.save(save_path+'maskdb.npy',np.array(masks))
 
 def create_test_data():
     train_data_path = os.path.join(data_path, 'test')
@@ -89,5 +141,7 @@ def load_test_data():
     return imgs_test, imgs_id
 
 if __name__ == '__main__':
-    create_train_data()
-    create_test_data()
+    # create_train_data()
+    # create_test_data()
+
+    detseg()
