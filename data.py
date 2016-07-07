@@ -24,6 +24,7 @@ image_rows = 420
 image_cols = 580
 
 
+
 def create_train_data():
     train_data_path = os.path.join(data_path, 'train')
     images = os.listdir(train_data_path)
@@ -64,38 +65,54 @@ def load_train_data():
     imgs_mask_train = np.load('imgs_mask_train.npy')
     return imgs_train, imgs_mask_train
 
+def preprocess(imgs, img_rows,img_cols):
+    imgs_p = np.ndarray((imgs.shape[0],imgs.shape[1],img_rows,img_cols),dtype=np.uint8)
+    for i in range(imgs.shape[0]):
+        imgs_p[i, 0 ] = cv2.resize(imgs[i,0],(img_cols,img_rows),interpolation=cv2.INTER_CUBIC)
+    return imgs_p
+
 def detseg():
+    out_rows=384
+    out_cols=512
     imgs_train = np.load('imgs_train.npy')
     imgs_train -=imgs_train.mean(0)[np.newaxis,]
     imgs_train /=imgs_train.std()
-    np.save(save_path+'data.npy',imgs_train.astype(np.uint8))
-    del imgs_train
-    print('save data')
+    imgs_train=preprocess(imgs_train, out_rows,out_cols)
     imgs_mask_train = np.load('imgs_mask_train.npy')
     imgs_mask_train[imgs_mask_train<=50]=0
     imgs_mask_train[imgs_mask_train>50]=1
+    imgs_mask_train=preprocess(imgs_mask_train, out_rows,out_cols)
+    
+    # if os.path.exists(save_path+'data.npy')==False:
+    np.save(save_path+'data.npy',imgs_train.astype(np.uint8))
+    print('save data')
     np.save(save_path+'mask.npy',imgs_mask_train.astype(np.uint8))
     print('save mask')
+    del imgs_train
     
     bboxes=[]
     masks=[]
     for percent,label in enumerate(imgs_mask_train):
         if percent % 100==0:
             print(percent)
+        label=label[0]
         CCMap,CCNum = skimage.measure.label(label,connectivity=1,background=0,return_num=True)
         gt_boxes=[]
         instance_masks=[]
         for ins in range(CCNum):
             foregroundIdx=CCMap==ins
+            # plt.imshow(foregroundIdx)
+            # plt.show()
             area=np.sum(foregroundIdx)
             if area<10:
                 CCMap[foregroundIdx]=-1
                 continue
-            idx_map=np.where(foregroundIdx==foregroundIdx.max())
+            idx_map=np.where(foregroundIdx==True)
             ymin=idx_map[0].min()
             ymax=idx_map[0].max()
             xmin=idx_map[1].min()
             xmax=idx_map[1].max()
+            # print(xmin,ymin,xmax,ymax)
             instance_masks.append(label[ymin:ymax,xmin:xmax])
             gt_boxes.append([xmin,ymin,xmax,ymax,1])
         bboxes.append(gt_boxes)

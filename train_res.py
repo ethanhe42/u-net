@@ -28,14 +28,47 @@ from keras import backend as K
 from data import load_train_data, load_test_data
 from train import dice_coef,dice_coef_loss
 
-rows=224
-cols=320
+from skimage.transform import rotate, resize
+from skimage import data
+
+rows=160
+cols=224
+
 def preprocess(imgs, img_rows,img_cols):
     imgs_p = np.ndarray((imgs.shape[0], imgs.shape[1], img_rows, img_cols), dtype=np.uint8)
     for i in range(imgs.shape[0]):
         imgs_p[i, 0] = cv2.resize(imgs[i, 0], (img_cols, img_rows), interpolation=cv2.INTER_CUBIC)
     return imgs_p
 
+def augmentation(image, imageB, org_width=160,org_height=224, width=190, height=262):
+    max_angle=20
+    image=resize(image,(width,height))
+    imageB=resize(imageB,(width,height))
+
+    angle=np.random.randint(max_angle)
+    if np.random.randint(2):
+        angle=-angle
+    image=rotate(image,angle,resize=True)
+    imageB=rotate(imageB,angle,resize=True)
+
+    xstart=np.random.randint(width-org_width)
+    ystart=np.random.randint(height-org_height)
+    image=image[xstart:xstart+org_width,ystart:ystart+org_height]
+    imageB=imageB[xstart:xstart+org_width,ystart:ystart+org_height]
+
+    if np.random.randint(2):
+        image=cv2.flip(image,1)
+        imageB=cv2.flip(imageB,1)
+    
+    if np.random.randint(2):
+        imageB=cv2.flip(imageB,0)
+    # image=resize(image,(org_width,org_height))
+
+    return image,imageB
+    # print(image.shape)
+    # plt.imshow(image)
+    # plt.show()
+    
 # Helper to build a conv -> BN -> relu block
 def _conv_bn_relu(nb_filter, nb_row, nb_col, subsample=(1, 1)):
     def f(input):
@@ -140,17 +173,18 @@ def resnet():
     conv1 = _conv_bn_relu(nb_filter=64, nb_row=7, nb_col=7, subsample=(2, 2))(input)
     pool1 = MaxPooling2D(pool_size=(3, 3), strides=(2, 2), border_mode="same")(conv1)
 
+    nb_filters=2**3
     # Build residual blocks..
     block_fn = _bottleneck
-    block1 = _residual_block(block_fn, nb_filters=64, repetations=3, is_first_layer=True)(pool1)
-    block2 = _residual_block(block_fn, nb_filters=128, repetations=4)(block1)
-    block3 = _residual_block(block_fn, nb_filters=256, repetations=6)(block2)
-    block4 = _residual_block(block_fn, nb_filters=512, repetations=3)(block3)
+    block1 = _residual_block(block_fn, nb_filters=2*nb_filters, repetations=3, is_first_layer=True)(pool1)
+    block2 = _residual_block(block_fn, nb_filters=2**2*nb_filters, repetations=4)(block1)
+    block3 = _residual_block(block_fn, nb_filters=2**3*nb_filters, repetations=6)(block2)
+    block4 = _residual_block(block_fn, nb_filters=2**4*nb_filters, repetations=3)(block3)
 
-    up5=_up_block(block4,block3,256)
-    up6=_up_block(up5,block2,128)
-    up7=_up_block(up6,block1,64)
-    up8=_up_block(up7,conv1,32)
+    up5=_up_block(block4,block3,2**3*nb_filters)
+    up6=_up_block(up5,block2,2**2*nb_filters)
+    up7=_up_block(up6,block1,2*nb_filters)
+    up8=_up_block(up7,conv1,nb_filters)
 
     conv10=Convolution2D(1,1,1,activation='sigmoid')(up8)
 
@@ -202,15 +236,16 @@ def main():
     print('Creating and compiling model...')
     print('-'*30)
     model = resnet()
-    model.load_weights('resnet.hdf5')
+    # model.load_weights('resnet.hdf5')
     
     model_checkpoint = ModelCheckpoint('resnet.hdf5', monitor='loss',verbose=1, save_best_only=True)
-
+# ----------------------------------------------------------------------- 
     print('-'*30)
     print('Fitting model...')
     print('-'*30)
-    model.fit(imgs_train, imgs_mask_train, batch_size=8, nb_epoch=3, verbose=1, shuffle=True,
-              callbacks=[model_checkpoint])
+    model.fit(imgs_train, imgs_mask_train, batch_size=8, nb_epoch=3, verbose=1, shuffle=True, callbacks=[model_checkpoint])
+    # for i in range(3):
+    #     model.train(imgs_train[:3],imgs_mask_train[:3])
 
     print('-'*30)
     print('Loading and preprocessing test data...')
