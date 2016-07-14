@@ -27,7 +27,7 @@ def run_length_enc(label):
     from itertools import chain
     x = label.transpose().flatten()
     y = np.where(x > 0)[0]
-    if len(y) < 50:  # consider as empty
+    if len(y) < 10:  # consider as empty
         return ''
     z = np.where(np.diff(y) > 1)[0]
     start = np.insert(y[z+1], 0, y[0])
@@ -67,17 +67,17 @@ def visualize():
     imgs_train_pred=np.load('imgs_train_pred.npy')
     total=imgs_train.shape[0]
     for i in range(total):
-        augmentation(imgs_train[i,0])
-        # plt.subplot(221)
-        # plt.imshow(imgs_train[i,0])
-        # plt.subplot(222)
-        # plt.imshow(imgs_train_mask[i,0])
-        # plt.subplot(223)
-        # plt.imshow(imgs_train_pred[i,0])
-        # img = prep(imgs_train_pred[i,0])
-        # plt.subplot(224)
-        # plt.imshow(img)
-        # plt.show()
+        # augmentation(imgs_train[i,0])
+        plt.subplot(221)
+        plt.imshow(imgs_train[i,0])
+        plt.subplot(222)
+        plt.imshow(imgs_train_mask[i,0])
+        plt.subplot(223)
+        plt.imshow(imgs_train_pred[i,0])
+        img = prep(imgs_train_pred[i,0])
+        plt.subplot(224)
+        plt.imshow(img)
+        plt.show()
 
 def submission():
     from data import load_test_data
@@ -113,7 +113,7 @@ def submission():
 
 
 if __name__ == '__main__':
-    submission()
-    # visualize()
+    # submission()
+    visualize()
     # while True:
     #     augmentation()

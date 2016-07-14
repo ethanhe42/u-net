@@ -19,7 +19,7 @@ import skimage
 import skimage.measure
 
 data_path = 'raw/'
-save_path = '/mnt/data1/yihuihe/mnc/'
+save_path = '/mnt/data1/yihuihe/mnc_small/'
 image_rows = 420
 image_cols = 580
 
@@ -72,26 +72,41 @@ def preprocess(imgs, img_rows,img_cols):
     return imgs_p
 
 def detseg():
-    out_rows=384
-    out_cols=512
+    # out_rows=240
+    # out_cols=320
+    out_rows=160
+    out_cols=224
     imgs_train = np.load('imgs_train.npy')
-    imgs_train -=imgs_train.mean(0)[np.newaxis,]
-    imgs_train /=imgs_train.std()
-    imgs_train=preprocess(imgs_train, out_rows,out_cols)
+    imgs_train=preprocess(imgs_train, out_rows,out_cols).astype(np.float32)
+    mean_image=imgs_train.mean(0)[np.newaxis,]
+    imgs_train -=mean_image
+    print(np.histogram(imgs_train))
+    std_image=imgs_train.std(0)[np.newaxis,]
+    imgs_train /=std_image
+    print(np.histogram(imgs_train))
+
     imgs_mask_train = np.load('imgs_mask_train.npy')
-    imgs_mask_train[imgs_mask_train<=50]=0
-    imgs_mask_train[imgs_mask_train>50]=1
     imgs_mask_train=preprocess(imgs_mask_train, out_rows,out_cols)
-    
+    imgs_mask_train[imgs_mask_train<=50]=False
+    imgs_mask_train[imgs_mask_train>50]=True
+    print(np.histogram(imgs_mask_train))
+
     # if os.path.exists(save_path+'data.npy')==False:
-    np.save(save_path+'data.npy',imgs_train.astype(np.uint8))
+    np.save(save_path+'mean.npy',mean_image)
+    np.save(save_path+'std.npy',std_image)
+    np.save(save_path+'data.npy',imgs_train.astype(np.float32))
     print('save data')
-    np.save(save_path+'mask.npy',imgs_mask_train.astype(np.uint8))
+    np.save(save_path+'mask.npy',imgs_mask_train.astype(np.bool))
     print('save mask')
     del imgs_train
     
     bboxes=[]
     masks=[]
+
+    acc_width=[]
+    acc_height=[]
+    max_width=0
+
     for percent,label in enumerate(imgs_mask_train):
         if percent % 100==0:
             print(percent)
@@ -112,12 +127,22 @@ def detseg():
             ymax=idx_map[0].max()
             xmin=idx_map[1].min()
             xmax=idx_map[1].max()
+
+            max_width=foregroundIdx.shape[1]
+            acc_width.append(xmax-xmin)
+            acc_height.append(ymax-ymin)
             # print(xmin,ymin,xmax,ymax)
             instance_masks.append(label[ymin:ymax,xmin:xmax])
             gt_boxes.append([xmin,ymin,xmax,ymax,1])
         bboxes.append(gt_boxes)
         masks.append(instance_masks)
 
+    print("xmax", max_width, max(acc_width))
+    H, xedges, yedges=np.histogram2d(acc_width,acc_height, bins=50)
+    plt.imshow(H, interpolation='nearest', origin='low',
+                extent=[xedges[0], xedges[-1], yedges[0], yedges[-1]])
+    plt.show()
+    
     np.save(save_path+'roidb.npy',np.array(bboxes))
     np.save(save_path+'maskdb.npy',np.array(masks))
 

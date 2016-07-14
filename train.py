@@ -117,7 +117,7 @@ def get_unet():
 
 
 def preprocess(imgs):
-    imgs_p = np.ndarray((imgs.shape[0], imgs.shape[1], img_rows, img_cols), dtype=np.uint8)
+    imgs_p = np.ndarray((imgs.shape[0], imgs.shape[1], img_rows, img_cols), dtype=np.float)
     for i in range(imgs.shape[0]):
         imgs_p[i, 0] = cv2.resize(imgs[i, 0], (img_cols, img_rows), interpolation=cv2.INTER_CUBIC)
     return imgs_p
@@ -127,64 +127,68 @@ def train_and_predict():
     print('-'*30)
     print('Loading and preprocessing train data...')
     print('-'*30)
-    imgs_train, imgs_mask_train = load_train_data()
+    # imgs_train, imgs_mask_train = load_train_data()
+    imgs_train=np.load("/mnt/data1/yihuihe/mnc/data.npy")
+    imgs_mask_train=np.load("/mnt/data1/yihuihe/mnc/mask.npy")
+    imgs_train = imgs_train.astype('float32')
+    imgs_mask_train = imgs_mask_train.astype('float32')
 
     # imgs_train = preprocess(imgs_train)
     # imgs_mask_train = preprocess(imgs_mask_train)
+    # print(np.histogram(imgs_train))
+    # print(np.histogram(imgs_mask_train))
 
-    imgs_train = imgs_train.astype('float32')
-    imgs_train/=255.
-    mean = imgs_train.mean()# (0)[np.newaxis,:]  # mean for data centering
-    std = np.std(imgs_train)  # std for data normalization
+    total=imgs_train.shape[0]
+    # imgs_train/=255.
+    # mean = imgs_train.mean()# (0)[np.newaxis,:]  # mean for data centering
+    # std = np.std(imgs_train)  # std for data normalization
     # imgs_train -= mean
     # imgs_train /= std
-    total=imgs_train.shape[0]
 
-    imgs_mask_train = imgs_mask_train.astype('float32')
-    imgs_mask_train /= 255.  # scale masks to [0, 1]
+    # imgs_mask_train /= 255.  # scale masks to [0, 1]
 
     print('-'*30)
     print('Creating and compiling model...')
     print('-'*30)
     model = get_unet()
     
-    model_checkpoint = ModelCheckpoint('unet.hdf5', monitor='loss',verbose=1, save_best_only=True)
+    # model_checkpoint = ModelCheckpoint('unet.hdf5', monitor='loss',verbose=1, save_best_only=True)
 
-    print('-'*30)
-    print('Fitting model...')
-    print('-'*30)
-    # model.fit(imgs_train, imgs_mask_train, batch_size=32, nb_epoch=200, verbose=1, shuffle=True,callbacks=[model_checkpoint])
+    # print('-'*30)
+    # print('Fitting model...')
+    # print('-'*30)
+    # model.fit(imgs_train, imgs_mask_train, batch_size=32, nb_epoch=20, verbose=1, shuffle=True,callbacks=[model_checkpoint])
     
-    batch_size=32
-    max_iters=10000
-    for i in range(max_iters):
-        data_batch=np.ndarray((batch_size,1,img_rows,img_cols))
-        mask_batch=np.ndarray((batch_size,1,img_rows,img_cols))
+    # batch_size=32
+    # max_iters=10000
+    # for i in range(max_iters):
+    #     data_batch=np.ndarray((batch_size,1,img_rows,img_cols))
+    #     mask_batch=np.ndarray((batch_size,1,img_rows,img_cols))
         
-        for img in range(batch_size):
-            idx=np.random.randint(total)
-            data_batch[img,0],mask_batch[img,0]=augmentation(imgs_train[idx],imgs_mask_train[idx])
-            # plt.subplot(121)
-            # plt.imshow(data_batch[img,0])
-            # plt.subplot(122)
-            # plt.imshow(mask_batch[img,0])
-            # plt.show()
-            data_batch-=mean
-            data_batch/=std
-            print(np.histogram(data_batch))
-            print(np.histogram(mask_batch))
+    #     for img in range(batch_size):
+    #         idx=np.random.randint(total)
+    #         data_batch[img,0],mask_batch[img,0]=augmentation(imgs_train[idx],imgs_mask_train[idx])
+    #         # plt.subplot(121)
+    #         # plt.imshow(data_batch[img,0])
+    #         # plt.subplot(122)
+    #         # plt.imshow(mask_batch[img,0])
+    #         # plt.show()
+    #         data_batch-=mean
+    #         data_batch/=std
+    #         print(np.histogram(data_batch))
+    #         print(np.histogram(mask_batch))
 
-        model.train_on_batch(data_batch,mask_batch)
+    #     model.train_on_batch(data_batch,mask_batch)
 
     print('-'*30)
     print('Loading and preprocessing test data...')
     print('-'*30)
     imgs_test, imgs_id_test = load_test_data()
-    imgs_test = preprocess(imgs_test)
+    imgs_test = preprocess(imgs_test) # TODO: bug
 
     imgs_test = imgs_test.astype('float32')
-    imgs_test -= mean
-    imgs_test /= std
+    imgs_test -= np.load('/mnt/data1/yihuihe/mnc/mean.npy')
+    imgs_test /=np.load('/mnt/data1/yihuihe/mnc/std.npy')
 
     print('-'*30)
     print('Loading saved weights...')

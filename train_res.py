@@ -170,10 +170,10 @@ def _up_block(block,mrge, nb_filters):
 def resnet():
     input = Input(shape=(1, rows, cols))
 
-    conv1 = _conv_bn_relu(nb_filter=64, nb_row=7, nb_col=7, subsample=(2, 2))(input)
+    nb_filters=4 # 5
+    conv1 = _conv_bn_relu(nb_filter=2*nb_filters, nb_row=7, nb_col=7, subsample=(2, 2))(input)
     pool1 = MaxPooling2D(pool_size=(3, 3), strides=(2, 2), border_mode="same")(conv1)
 
-    nb_filters=2**3
     # Build residual blocks..
     block_fn = _bottleneck
     block1 = _residual_block(block_fn, nb_filters=2*nb_filters, repetations=3, is_first_layer=True)(pool1)
@@ -243,7 +243,7 @@ def main():
     print('-'*30)
     print('Fitting model...')
     print('-'*30)
-    model.fit(imgs_train, imgs_mask_train, batch_size=8, nb_epoch=3, verbose=1, shuffle=True, callbacks=[model_checkpoint])
+    model.fit(imgs_train, imgs_mask_train, batch_size=32, nb_epoch=20, verbose=1, shuffle=True, callbacks=[model_checkpoint])
     # for i in range(3):
     #     model.train(imgs_train[:3],imgs_mask_train[:3])
 
